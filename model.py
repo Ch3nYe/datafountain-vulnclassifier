@@ -2,7 +2,6 @@ from torch import nn
 from transformers import BertModel
 
 
-
 class VulnClassifier(nn.Module):
     def __init__(self):
         super().__init__()
@@ -15,9 +14,9 @@ class VulnClassifier(nn.Module):
         self.mask_impact_1 = nn.Linear(self.bert.config.hidden_size, 256)
         self.out_impact_1 = nn.Linear(256, 5)
         self.mask_impact_2 = nn.Linear(256, 256)
-        self.out_impact_2 = nn.Linear(256, 6)
+        self.out_impact_2 = nn.Linear(256, 7)
         self.mask_impact_3 = nn.Linear(256, 256)
-        self.out_impact_3 = nn.Linear(256, 3)
+        self.out_impact_3 = nn.Linear(256, 4)
 
     def forward(self, input_ids, attention_mask):
         _, pooled_output = self.bert(

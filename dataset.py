@@ -1,10 +1,9 @@
 from transformers import AutoTokenizer
 from torch.utils.data.dataset import Dataset
-from torch import tensor
-import torch
+from tokenizer import LABEL_TENSOR_MAPS
 from tqdm import tqdm
 import jsonlines
-import json
+
 
 class VulnDataset(Dataset):
     def __init__(self, path):
@@ -12,57 +11,21 @@ class VulnDataset(Dataset):
         with open(path, "r", encoding='utf-8') as f:
             it = jsonlines.Reader(f).iter()
             self.data = list(tqdm(it))
-        self.labels = {'privilege_required':
-                           {
-                               'admin/root':torch.zeros(4).scatter_(0,torch.tensor(0),1.),
-                               'nonprivileged':torch.zeros(4).scatter_(0,torch.tensor(1),1.),
-                               'access':torch.zeros(4).scatter_(0,torch.tensor(2),1.),
-                               'unknown':torch.zeros(4).scatter_(0,torch.tensor(3),1.),
-                            },
-                        'attack_vector':
-                            {
-                                'remote': torch.zeros(2).scatter_(0, torch.tensor(0), 1.),
-                                'non-remote': torch.zeros(2).scatter_(0, torch.tensor(1), 1.),
-                            },
-                        'impact_1':
-                            {
-                                'access': torch.zeros(5).scatter_(0, torch.tensor(0), 1.),
-                                'dos': torch.zeros(5).scatter_(0, torch.tensor(1), 1.),
-                                'information-disclosure': torch.zeros(5).scatter_(0, torch.tensor(2), 1.),
-                                'other': torch.zeros(5).scatter_(0, torch.tensor(3), 1.),
-                                'privileged-gained(rce)': torch.zeros(5).scatter_(0, torch.tensor(4), 1.),
-                                'none': torch.zeros(5),
-                            },
-                        'impact_2':
-                            {
-                                'admin/root': torch.zeros(6).scatter_(0, torch.tensor(0), 1.),
-                                'nonprivileged': torch.zeros(6).scatter_(0, torch.tensor(1), 1.),
-                                'unknown': torch.zeros(6).scatter_(0, torch.tensor(2), 1.),
-                                'local(credit)': torch.zeros(6).scatter_(0, torch.tensor(3), 1.),
-                                'other-target(credit)': torch.zeros(6).scatter_(0, torch.tensor(4), 1.),
-                                'other': torch.zeros(6).scatter_(0, torch.tensor(5), 1.),
-                                'none': torch.zeros(6),
-                            },
-                        'impact_3':
-                            {
-                                'admin/root': torch.zeros(3).scatter_(0, torch.tensor(0), 1.),
-                                'nonprivileged': torch.zeros(3).scatter_(0, torch.tensor(1), 1.),
-                                'unknown': torch.zeros(3).scatter_(0, torch.tensor(2), 1.),
-                                'none': torch.zeros(3),
-                            },
-                       }
+        self.labels = LABEL_TENSOR_MAPS
 
 
     def __getitem__(self, index):
+        cve_id =  self.data[index]['cve-number']
         privilege_required  = self.data[index]['privilege-required']
         attack_vector = self.data[index]['attack-vector']
         impact = self.data[index]['impact'].split("_")
-        impact.extend(['unknown']*(3-len(impact)))
+        impact.extend(['none']*(3-len(impact))) # padding to 3 impact
         desc = self.data[index]['description']
 
         data_x = self.tokenizer(desc, padding="max_length", truncation=True, return_tensors='pt',)
 
         return {
+            "cve-number" : cve_id,
             "desc" : data_x['input_ids'].flatten(),
             "attention_mask" : data_x['attention_mask'].flatten(),
             "privilege_required" : self.labels["privilege_required"][privilege_required],
@@ -76,5 +39,32 @@ class VulnDataset(Dataset):
         return len(self.data)
 
 
+class VulnSubmitDataset(Dataset):
+    def __init__(self, path):
+        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        with open(path, "r", encoding='utf-8') as f:
+            it = jsonlines.Reader(f).iter()
+            self.data = list(tqdm(it))
+        self.labels = LABEL_TENSOR_MAPS
+
+
+    def __getitem__(self, index):
+        cve_id =  self.data[index]['cve-number']
+        desc = self.data[index]['description']
+
+        data_x = self.tokenizer(desc, padding="max_length", truncation=True, return_tensors='pt',)
+
+        return {
+            "cve-number" : cve_id,
+            "desc" : data_x['input_ids'].flatten(),
+            "attention_mask" : data_x['attention_mask'].flatten(),
+        }
+
+    def __len__(self):
+        return len(self.data)
+
+
+
 if __name__ == '__main__':
-    dataset = VulnDataset("./dataset/labeled/train.json")
+    # dataset = VulnDataset("./dataset/labeled/local.test.json")
+    submit_dataset = VulnSubmitDataset("./dataset/test_a.json")
