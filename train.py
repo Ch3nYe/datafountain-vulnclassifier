@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 from dataset import VulnDataset, VulnSubmitDataset
-from model import VulnClassifier
+from model import VulnClassifier, Bert0VulnClassifier
 from torch.nn import MSELoss
 from datasets import load_metric
 import csv
@@ -105,7 +105,7 @@ def generate_submission(
             writer.writerows(results)
 
 
-device = torch.device('cpu')
+device = torch.device('cuda')
 EPOCHS = 5
 
 train_dataset = VulnDataset("./dataset/labeled/local.train.json")
@@ -115,7 +115,8 @@ train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
 test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
 submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
 
-model = VulnClassifier()
+# model = VulnClassifier();print(model)
+model = Bert0VulnClassifier();print(model)
 model.to(device)
 total_train_steps = len(train_data_loader) * EPOCHS
 
@@ -142,7 +143,7 @@ print("[-] accuracy log:\n"+"\n".join(map(str,all_acc)))
 torch.save(model,"models/bert-vulnclassifier")
 # model = torch.load("models/bert-vulnclassifier")
 
-test_epoch(model,test_data_loader,device)
+# test_epoch(model,test_data_loader,device)
 
-# generate_submission(model,submission_data_loader,device,save_path="dataset/submission.csv")
+generate_submission(model,submission_data_loader,device,save_path="dataset/submission.csv")
 
