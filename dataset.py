@@ -6,8 +6,8 @@ import jsonlines
 
 
 class VulnDataset(Dataset):
-    def __init__(self, path):
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    def __init__(self, path, tokenizer_name="distilbert-base-uncased"):
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         with open(path, "r", encoding='utf-8') as f:
             it = jsonlines.Reader(f).iter()
             self.data = list(tqdm(it))
@@ -40,8 +40,8 @@ class VulnDataset(Dataset):
 
 
 class VulnSubmitDataset(Dataset):
-    def __init__(self, path):
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    def __init__(self, path, tokenizer_name="distilbert-base-uncased"):
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         with open(path, "r", encoding='utf-8') as f:
             it = jsonlines.Reader(f).iter()
             self.data = list(tqdm(it))

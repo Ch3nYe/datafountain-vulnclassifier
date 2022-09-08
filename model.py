@@ -2,9 +2,9 @@ from torch import nn
 from transformers import BertModel, BertConfig
 
 class VulnClassifier(nn.Module):
-    def __init__(self):
+    def __init__(self, Bert_name="distilbert-base-uncased"):
         super().__init__()
-        self.bert = BertModel.from_pretrained("distilbert-base-uncased")
+        self.bert = BertModel.from_pretrained(Bert_name)
         self.mask_privilege_required = nn.Linear(self.bert.config.hidden_size, 128)
         self.out_privilege_required = nn.Linear(128, 4)
         self.mask_attack_vector = nn.Linear(self.bert.config.hidden_size, 128)

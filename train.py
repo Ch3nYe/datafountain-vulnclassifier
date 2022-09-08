@@ -107,15 +107,17 @@ def generate_submission(
 
 device = torch.device('cuda')
 EPOCHS = 5
+Bert_name = "distilbert-base-uncased"
+tokenizer_name = "distilbert-base-uncased"
 
-train_dataset = VulnDataset("./dataset/labeled/local.train.json")
-test_dataset = VulnDataset("./dataset/labeled/local.test.json")
-submission_dataset = VulnSubmitDataset("./dataset/test_a.json")
+train_dataset = VulnDataset("./dataset/labeled/local.train.json",tokenizer_name=tokenizer_name)
+test_dataset = VulnDataset("./dataset/labeled/local.test.json",tokenizer_name=tokenizer_name)
+submission_dataset = VulnSubmitDataset("./dataset/test_a.json",tokenizer_name=tokenizer_name)
 train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
 test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
 submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
 
-# model = VulnClassifier();print(model)
+# model = VulnClassifier(Bert_name);print(model)
 model = Bert0VulnClassifier();print(model)
 model.to(device)
 total_train_steps = len(train_data_loader) * EPOCHS
