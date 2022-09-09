@@ -91,7 +91,7 @@ def generate_submission(
             for idx, cve_id in enumerate(cve_ids):
                 line = [cve_id]
                 for k in ["privilege_required", "attack_vector", "impact_1", "impact_2", "impact_3"]:
-                    id = torch.argmax(outputs[k][idx], dim=-1).numel()
+                    id = int(torch.argmax(outputs[k][idx], dim=-1))
                     tag = ID_LABEL_MAPS[k][id]
                     line.append(tag)
                 # make result reasonable
