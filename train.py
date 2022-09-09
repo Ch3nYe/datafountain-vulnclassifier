@@ -4,12 +4,35 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 from dataset import VulnDataset, VulnSubmitDataset
-from model import VulnClassifier, Bert0VulnClassifier
+from model import VulnClassifier
 from torch.nn import MSELoss
 from datasets import load_metric
 import csv
 from tokenizer import ID_LABEL_MAPS
 
+device = torch.device('cuda')
+EPOCHS = 5
+BERT_name = "prajjwal1/bert-small" # "prajjwal1/bert-small", "distilbert-base-uncased", None
+tokenizer_name = "distilbert-base-uncased"
+train_ndata_path = "./dataset/labeled/train.json"
+test_ndata_path = "./dataset/labeled/local.test.json"
+submission_ndata_path = "./dataset/test_a.json"
+model_path = "models/bert-vulnclassifier"
+test_only = False # True mean only test model, where you must load it from model_path
+load_model = False # True mean load model from model_path
+
+
+train_dataset = VulnDataset(train_ndata_path,tokenizer_name=tokenizer_name)
+test_dataset = VulnDataset(test_ndata_path,tokenizer_name=tokenizer_name)
+submission_dataset = VulnSubmitDataset(submission_ndata_path,tokenizer_name=tokenizer_name)
+train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
+test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
+submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
+
+model = VulnClassifier(BERT_name=BERT_name)
+print(model)
+if load_model:
+    model = torch.load(model_path)
 
 def train_epoch(
         model,
@@ -18,10 +41,12 @@ def train_epoch(
         optimizer,
         device,
         scheduler,
+        epoch_id,
 ):
     model.train()
     losses = []
-    for sample in tqdm(data_loader):
+    looper = tqdm(data_loader)
+    for sample in looper:
         optimizer.zero_grad()
 
         input_ids = sample["desc"].to(device)
@@ -40,6 +65,8 @@ def train_epoch(
         loss.backward()
         optimizer.step() # model weight update
         scheduler.step() # learning rate update
+        looper.set_description(f'Epoch {epoch_id}')
+        looper.set_postfix(loss=loss.item())
     epoch_loss = np.mean(losses)
     print("[-] epoch train loss:",epoch_loss)
     return epoch_loss
@@ -78,8 +105,13 @@ def generate_submission(
     # write to file
     with open(save_path, "w") as f:
         writer = csv.writer(f)
+        writer.writerow(
+            ["CVE-Number","Description","Privilege-Required","Attack-Vector",
+             "Impact-level1","Impact-level2","Impact-level3"]
+        )
         for batch in tqdm(data_loader):
             cve_ids = batch.pop('cve-number')
+            desc_text = batch.pop('desc_text')
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.no_grad():
                 outputs = model(batch['desc'], batch['attention_mask'])
@@ -89,36 +121,23 @@ def generate_submission(
 
             results = []
             for idx, cve_id in enumerate(cve_ids):
-                line = [cve_id]
+                line = [cve_id, desc_text[idx]]
                 for k in ["privilege_required", "attack_vector", "impact_1", "impact_2", "impact_3"]:
                     id = int(torch.argmax(outputs[k][idx], dim=-1))
                     tag = ID_LABEL_MAPS[k][id]
                     line.append(tag)
                 # make result reasonable
-                if line[3] not in ["information-disclosure","privileged-gained(rce)"]: # impact_1
-                    line = line[:4]
-                elif line[4] not in ["local(credit)","other-target(credit)"]: # impact_2
+                if line[4] not in ["information-disclosure","privileged-gained(rce)"]: # impact_1
                     line = line[:5]
-                elif line[5] == "none": # impact_3
-                    line[5] = "unknown"
+                elif line[5] not in ["local(credit)","other-target(credit)"]: # impact_2
+                    line = line[:6]
+                elif line[6] == "none": # impact_3
+                    line[6] = "unknown"
                 results.append(line)
             writer.writerows(results)
 
 
-device = torch.device('cuda')
-EPOCHS = 5
-Bert_name = "distilbert-base-uncased"
-tokenizer_name = "distilbert-base-uncased"
 
-train_dataset = VulnDataset("./dataset/labeled/local.train.json",tokenizer_name=tokenizer_name)
-test_dataset = VulnDataset("./dataset/labeled/local.test.json",tokenizer_name=tokenizer_name)
-submission_dataset = VulnSubmitDataset("./dataset/test_a.json",tokenizer_name=tokenizer_name)
-train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
-test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
-submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
-
-# model = VulnClassifier(Bert_name);print(model)
-model = Bert0VulnClassifier();print(model)
 model.to(device)
 total_train_steps = len(train_data_loader) * EPOCHS
 
@@ -132,20 +151,20 @@ scheduler = get_linear_schedule_with_warmup(
 
 loss_fn = MSELoss().to(device)
 
-all_acc = []
-all_loss = []
-for i in range(EPOCHS):
-    loss = train_epoch(model,train_data_loader,loss_fn,optimizer,device,scheduler)
-    acc = test_epoch(model,test_data_loader,device)
-    all_loss.append((i,loss))
-    all_acc.append((i,acc))
-print("[-] loss log:\n"+"\n".join(map(str,all_loss)))
-print("[-] accuracy log:\n"+"\n".join(map(str,all_acc)))
+if not test_only:
+    all_acc = []
+    all_loss = []
+    for i in range(EPOCHS):
+        loss = train_epoch(model,train_data_loader,loss_fn,optimizer,device,scheduler,i)
+        acc = test_epoch(model,test_data_loader,device)
+        all_loss.append((i,loss))
+        all_acc.append((i,acc))
+    print("[-] loss log:\n"+"\n".join(map(str,all_loss)))
+    print("[-] accuracy log:\n"+"\n".join(map(str,all_acc)))
+else:
+    test_epoch(model,test_data_loader,device)
 
-torch.save(model,"models/bert-vulnclassifier")
-# model = torch.load("models/bert-vulnclassifier")
-
-# test_epoch(model,test_data_loader,device)
+torch.save(model, model_path)
 
 generate_submission(model,submission_data_loader,device,save_path="dataset/submission.csv")
 

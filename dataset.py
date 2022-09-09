@@ -57,6 +57,7 @@ class VulnSubmitDataset(Dataset):
         return {
             "cve-number" : cve_id,
             "desc" : data_x['input_ids'].flatten(),
+            "desc_text" : desc,
             "attention_mask" : data_x['attention_mask'].flatten(),
         }
 
