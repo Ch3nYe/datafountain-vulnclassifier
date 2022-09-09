@@ -14,16 +14,16 @@ device = torch.device('cuda')
 EPOCHS = 5
 BERT_name = "prajjwal1/bert-small" # "prajjwal1/bert-small", "distilbert-base-uncased", None
 tokenizer_name = "distilbert-base-uncased"
-train_ndata_path = "./dataset/labeled/train.json"
-test_ndata_path = "./dataset/labeled/local.test.json"
+train_data_path = "./dataset/labeled/train.json"
+test_data_path = "./dataset/labeled/local.test.json"
 submission_ndata_path = "./dataset/test_a.json"
 model_path = "models/bert-vulnclassifier"
 test_only = False # True mean only test model, where you must load it from model_path
 load_model = False # True mean load model from model_path
 
 
-train_dataset = VulnDataset(train_ndata_path,tokenizer_name=tokenizer_name)
-test_dataset = VulnDataset(test_ndata_path,tokenizer_name=tokenizer_name)
+train_dataset = VulnDataset(train_data_path,tokenizer_name=tokenizer_name)
+test_dataset = VulnDataset(test_data_path,tokenizer_name=tokenizer_name)
 submission_dataset = VulnSubmitDataset(submission_ndata_path,tokenizer_name=tokenizer_name)
 train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
 test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
