@@ -16,23 +16,27 @@ BERT_name = "prajjwal1/bert-small" # "prajjwal1/bert-small", "distilbert-base-un
 tokenizer_name = "distilbert-base-uncased"
 train_data_path = "./dataset/labeled/train.json"
 test_data_path = "./dataset/labeled/local.test.json"
-submission_ndata_path = "./dataset/test_a.json"
-model_path = "models/bert-vulnclassifier"
+submission_data_path = "./dataset/test_a.json"
+load_model_path = "models/bert-vulnclassifier"
+save_model_path = "models/bert-vulnclassifier-trained"
 test_only = False # True mean only test model, where you must load it from model_path
-load_model = False # True mean load model from model_path
+load_model = False # True mean load model from load_model_path
 
 
 train_dataset = VulnDataset(train_data_path,tokenizer_name=tokenizer_name)
 test_dataset = VulnDataset(test_data_path,tokenizer_name=tokenizer_name)
-submission_dataset = VulnSubmitDataset(submission_ndata_path,tokenizer_name=tokenizer_name)
+submission_dataset = VulnSubmitDataset(submission_data_path, tokenizer_name=tokenizer_name)
 train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
 test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
 submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
 
-model = VulnClassifier(BERT_name=BERT_name)
-print(model)
+
 if load_model:
-    model = torch.load(model_path)
+    model = torch.load(load_model_path)
+else:
+    model = VulnClassifier(BERT_name=BERT_name)
+print(model)
+
 
 def train_epoch(
         model,
@@ -164,7 +168,7 @@ if not test_only:
 else:
     test_epoch(model,test_data_loader,device)
 
-torch.save(model, model_path)
+torch.save(model, save_model_path)
 
 generate_submission(model,submission_data_loader,device,save_path="dataset/submission.csv")
 
