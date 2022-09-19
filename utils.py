@@ -80,3 +80,29 @@ ID_LABEL_MAPS = {
             3:'none',
         },
 }
+
+
+def normalize_result(line):
+    # make result reasonable
+    if line[4] == "privileged-gained(rce)":  # impact_1
+        line[5] = "unknown" if line[5] == "none" else line[5]
+        line = line[:6]
+    elif line[4] == "information-disclosure":
+        if line[5] == "other":  # impact_2
+            line = line[:6]
+        else:
+            line[6] = "unknown" if line[6] == "none" else line[6]  # impact_3
+    else:
+        line = line[:5]
+
+    # fix case
+    line[2] = "Nonprivileged" if line[2] == "nonprivileged" else line[2]
+    line[3] = "Non-remote" if line[3] == "non-remote" else line[3]
+    line[4] = "DoS" if line[4] == "dos" else line[4]
+    line[4] = "Privileged-Gained(RCE)" if line[4] == "privileged-gained(rce)" else line[4]
+    if len(line)>5:
+        line[5] = "Nonprivileged" if line[5] == "nonprivileged" else line[5]
+    if len(line)>6:
+        line[6] = "Nonprivileged" if line[6] == "nonprivileged" else line[6]
+
+    return line

@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer
 from torch.utils.data.dataset import Dataset
-from tokenizer import LABEL_TENSOR_MAPS
+from utils import LABEL_TENSOR_MAPS
 from tqdm import tqdm
 import jsonlines
 
@@ -8,6 +8,7 @@ import jsonlines
 class VulnDataset(Dataset):
     def __init__(self, path, tokenizer_name="distilbert-base-uncased"):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        print(f"[-] read {path}")
         with open(path, "r", encoding='utf-8') as f:
             it = jsonlines.Reader(f).iter()
             self.data = list(tqdm(it))
@@ -42,6 +43,7 @@ class VulnDataset(Dataset):
 class VulnSubmitDataset(Dataset):
     def __init__(self, path, tokenizer_name="distilbert-base-uncased"):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        print(f"[-] read {path}")
         with open(path, "r", encoding='utf-8') as f:
             it = jsonlines.Reader(f).iter()
             self.data = list(tqdm(it))

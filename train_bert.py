@@ -1,5 +1,7 @@
-import numpy as np
+import os
+import csv
 import torch
+import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
@@ -7,35 +9,7 @@ from dataset import VulnDataset, VulnSubmitDataset
 from model import VulnClassifier
 from torch.nn import MSELoss
 from datasets import load_metric
-import csv
-from tokenizer import ID_LABEL_MAPS
-
-device = torch.device('cuda')
-EPOCHS = 5
-BERT_name = "prajjwal1/bert-small" # "prajjwal1/bert-small", "distilbert-base-uncased", None
-tokenizer_name = "distilbert-base-uncased"
-train_data_path = "./dataset/labeled/train.json"
-test_data_path = "./dataset/labeled/local.test.json"
-submission_data_path = "./dataset/test_a.json"
-load_model_path = "models/bert-vulnclassifier"
-save_model_path = "models/bert-vulnclassifier-trained"
-test_only = False # True mean only test model, where you must load it from model_path
-load_model = False # True mean load model from load_model_path
-
-
-train_dataset = VulnDataset(train_data_path,tokenizer_name=tokenizer_name)
-test_dataset = VulnDataset(test_data_path,tokenizer_name=tokenizer_name)
-submission_dataset = VulnSubmitDataset(submission_data_path, tokenizer_name=tokenizer_name)
-train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
-test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
-submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
-
-
-if load_model:
-    model = torch.load(load_model_path)
-else:
-    model = VulnClassifier(BERT_name=BERT_name)
-print(model)
+from utils import ID_LABEL_MAPS, normalize_result
 
 
 def train_epoch(
@@ -131,44 +105,72 @@ def generate_submission(
                     tag = ID_LABEL_MAPS[k][id]
                     line.append(tag)
                 # make result reasonable
-                if line[4] not in ["information-disclosure","privileged-gained(rce)"]: # impact_1
-                    line = line[:5]
-                elif line[5] not in ["local(credit)","other-target(credit)"]: # impact_2
-                    line = line[:6]
-                elif line[6] == "none": # impact_3
-                    line[6] = "unknown"
+                line = normalize_result(line)
                 results.append(line)
             writer.writerows(results)
+    # convert csv to xlsx
+    from pandas import read_csv
+    with open(save_path) as f:
+        data = read_csv(f)
+        data.to_excel(save_path.replace(".csv",".xlsx"),index=False)
+    os.remove(save_path)
 
 
+if __name__ == '__main__':
+    device = torch.device('cuda:0')
+    EPOCHS = 5
+    BERT_name = "prajjwal1/bert-small"  # "prajjwal1/bert-small", "distilbert-base-uncased", None
+    tokenizer_name = "distilbert-base-uncased"
+    train_data_path = "./dataset/labeled/train.json"
+    test_data_path = "./dataset/labeled/local.test.json"
+    submission_data_path = "./dataset/test_a.json"
+    load_model_path = "models/bert-vulnclassifier"
+    save_model_path = "models/bert-vulnclassifier-trained"
+    result_path = "dataset/results.csv"
+    test_only = False  # True mean only test model, where you must load it from model_path
+    load_model = False  # True mean load model from load_model_path
 
-model.to(device)
-total_train_steps = len(train_data_loader) * EPOCHS
 
-optimizer = AdamW(model.parameters(), lr=3e-5, correct_bias=False, no_deprecation_warning=True)
+    train_dataset = VulnDataset(train_data_path, tokenizer_name=tokenizer_name)
+    test_dataset = VulnDataset(test_data_path, tokenizer_name=tokenizer_name)
+    submission_dataset = VulnSubmitDataset(submission_data_path, tokenizer_name=tokenizer_name)
+    train_data_loader = DataLoader(train_dataset, batch_size=16, num_workers=0)
+    test_data_loader = DataLoader(test_dataset, batch_size=16, num_workers=0)
+    submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_workers=0)
 
-scheduler = get_linear_schedule_with_warmup(
-  optimizer,
-  num_warmup_steps=0,
-  num_training_steps=total_train_steps
-)
+    if load_model:
+        model = torch.load(load_model_path)
+    else:
+        model = VulnClassifier(BERT_name=BERT_name)
+    print(model)
 
-loss_fn = MSELoss().to(device)
+    model.to(device)
+    total_train_steps = len(train_data_loader) * EPOCHS
 
-if not test_only:
-    all_acc = []
-    all_loss = []
-    for i in range(EPOCHS):
-        loss = train_epoch(model,train_data_loader,loss_fn,optimizer,device,scheduler,i)
-        acc = test_epoch(model,test_data_loader,device)
-        all_loss.append((i,loss))
-        all_acc.append((i,acc))
-    print("[-] loss log:\n"+"\n".join(map(str,all_loss)))
-    print("[-] accuracy log:\n"+"\n".join(map(str,all_acc)))
-else:
-    test_epoch(model,test_data_loader,device)
+    optimizer = AdamW(model.parameters(), lr=3e-5, correct_bias=False, no_deprecation_warning=True)
 
-torch.save(model, save_model_path)
+    scheduler = get_linear_schedule_with_warmup(
+      optimizer,
+      num_warmup_steps=0,
+      num_training_steps=total_train_steps
+    )
 
-generate_submission(model,submission_data_loader,device,save_path="dataset/submission.csv")
+    loss_fn = MSELoss().to(device)
+
+    if not test_only:
+        all_acc = []
+        all_loss = []
+        for i in range(EPOCHS):
+            loss = train_epoch(model,train_data_loader,loss_fn,optimizer,device,scheduler,i)
+            acc = test_epoch(model,test_data_loader,device)
+            all_loss.append((i,loss))
+            all_acc.append((i,acc))
+        print("[-] loss log:\n"+"\n".join(map(str,all_loss)))
+        print("[-] accuracy log:\n"+"\n".join(map(str,all_acc)))
+    else:
+        test_epoch(model,test_data_loader,device)
+
+    torch.save(model, save_model_path)
+
+    generate_submission(model,submission_data_loader,device,save_path=result_path)
 
