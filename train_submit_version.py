@@ -16,7 +16,7 @@ train_data_path2 = "./dataset/labeled/train.json"
 submission_data_path = "./dataset/test_a.json"
 load_model_path = "models/bert-vulnclassifier-finetuned3"
 save_model_path = "models/bert-vulnclassifier-finetuned3"
-result_path = "dataset/submission.csv"
+result_path = "dataset/submission.xlsx"
 load_model = False # True mean load model from load_model_path
 generation_only = False  # True mean only generate submission, and you must load model from load_model_path
 

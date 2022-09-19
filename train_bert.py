@@ -124,9 +124,9 @@ if __name__ == '__main__':
     train_data_path = "./dataset/labeled/train.json"
     test_data_path = "./dataset/labeled/local.test.json"
     submission_data_path = "./dataset/test_a.json"
-    load_model_path = "models/bert-vulnclassifier"
+    load_model_path = "models/bert-vulnclassifier-trained"
     save_model_path = "models/bert-vulnclassifier-trained"
-    result_path = "dataset/results.csv"
+    result_path = "dataset/results.xlsx"
     test_only = False  # True mean only test model, where you must load it from model_path
     load_model = False  # True mean load model from load_model_path
 
