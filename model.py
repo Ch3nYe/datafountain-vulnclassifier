@@ -77,7 +77,7 @@ class VulnClassifier2(nn.Module):
         attack_vector = self.out_attack_vector(pooled_output)
         impact_1 = self.out_impact_1(pooled_output)
         impact_2 = self.out_impact_2(pooled_output)
-        impact_3 = self.out_impact_2(pooled_output)
+        impact_3 = self.out_impact_3(pooled_output)
         return {
             'privilege_required': privilege_required, 'attack_vector': attack_vector,
             'impact_1': impact_1, 'impact_2': impact_2, 'impact_3': impact_3
