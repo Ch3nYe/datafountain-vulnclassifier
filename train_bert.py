@@ -113,7 +113,6 @@ def generate_submission(
     with open(save_path) as f:
         data = read_csv(f)
         data.to_excel(save_path.replace(".csv",".xlsx"),index=False)
-    os.remove(save_path)
 
 
 if __name__ == '__main__':
