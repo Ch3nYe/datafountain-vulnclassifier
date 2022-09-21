@@ -12,6 +12,8 @@ jsonlines
 
 ## train and test
 
+new `models` path for saving models
+
 read and edit train_submit_version.py, then run:
 
 `python train_submit_version.py`
