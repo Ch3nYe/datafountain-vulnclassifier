@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from transformers import BertModel, BertConfig
 
@@ -78,6 +79,79 @@ class VulnClassifier2(nn.Module):
         impact_1 = self.out_impact_1(pooled_output)
         impact_2 = self.out_impact_2(pooled_output)
         impact_3 = self.out_impact_3(pooled_output)
+        return {
+            'privilege_required': privilege_required, 'attack_vector': attack_vector,
+            'impact_1': impact_1, 'impact_2': impact_2, 'impact_3': impact_3
+        }
+
+
+class VulnClassifierLSTM(nn.Module):
+    def __init__(self):
+        super(VulnClassifierLSTM, self).__init__()
+        self.rnn = nn.LSTM(input_size=1, hidden_size=512, num_layers=2, bidirectional=True, batch_first=True)
+        output_size = self.rnn.hidden_size * 2 if self.rnn.bidirectional else self.rnn.hidden_size
+
+        self.mask_privilege_required = nn.Linear(output_size, 128)
+        self.out_privilege_required = nn.Linear(128, 4)
+        self.mask_attack_vector = nn.Linear(output_size, 128)
+        self.out_attack_vector = nn.Linear(128, 2)
+        self.mask_impact_1 = nn.Linear(output_size, 128)
+        self.out_impact_1 = nn.Linear(128, 5)
+        self.mask_impact_2 = nn.Linear(output_size, 128)
+        self.out_impact_2 = nn.Linear(128, 7)
+        self.mask_impact_3 = nn.Linear(output_size, 128)
+        self.out_impact_3 = nn.Linear(128, 4)
+
+    def forward(self, x):
+        _output, (h_n, c_n) = self.rnn(x)
+        output = torch.cat((h_n[-1, :, :], h_n[-2, :, :]), dim=-1)
+
+        mask_privilege_required = self.mask_privilege_required(output)
+        privilege_required = self.out_privilege_required(mask_privilege_required)
+        mask_attack_vector = self.mask_attack_vector(output)
+        attack_vector = self.out_attack_vector(mask_attack_vector)
+        mask_impact_1 = self.mask_impact_1(output)
+        impact_1 = self.out_impact_1(mask_impact_1)
+        mask_impact_2 = self.mask_impact_2(output)
+        impact_2 = self.out_impact_2(mask_impact_2)
+        mask_impact_3 = self.mask_impact_3(output)
+        impact_3 = self.out_impact_3(mask_impact_3)
+        return {
+            'privilege_required': privilege_required, 'attack_vector': attack_vector,
+            'impact_1': impact_1, 'impact_2': impact_2, 'impact_3': impact_3
+        }
+
+class VulnClassifierLSTMBig(nn.Module):
+    def __init__(self):
+        super(VulnClassifierLSTMBig, self).__init__()
+        self.rnn = nn.LSTM(input_size=1, hidden_size=512, num_layers=2, bidirectional=True, batch_first=True)
+        output_size = self.rnn.hidden_size * 2 if self.rnn.bidirectional else self.rnn.hidden_size
+        self.mask_privilege_required = nn.Linear(output_size, 128)
+        self.out_privilege_required = nn.Linear(128, 4)
+        self.mask_attack_vector = nn.Linear(output_size, 128)
+        self.out_attack_vector = nn.Linear(128, 2)
+
+        self.mask_impact_1 = nn.Linear(output_size, 128)
+        self.out_impact_1 = nn.Linear(128, 5)
+        self.mask_impact_2 = nn.Linear(128, 128)
+        self.out_impact_2 = nn.Linear(128, 7)
+        self.mask_impact_3 = nn.Linear(128, 128)
+        self.out_impact_3 = nn.Linear(128, 4)
+
+    def forward(self, x):
+        _output, (h_n, c_n) = self.rnn(x)
+        output = torch.cat((h_n[-1, :, :], h_n[-2, :, :]), dim=-1)
+
+        mask_privilege_required = self.mask_privilege_required(output)
+        privilege_required = self.out_privilege_required(mask_privilege_required)
+        mask_attack_vector = self.mask_attack_vector(output)
+        attack_vector = self.out_attack_vector(mask_attack_vector)
+        mask_impact_1 = self.mask_impact_1(output)
+        impact_1 = self.out_impact_1(mask_impact_1)
+        mask_impact_2 = self.mask_impact_2(mask_impact_1)
+        impact_2 = self.out_impact_2(mask_impact_2)
+        mask_impact_3 = self.mask_impact_3(mask_impact_2)
+        impact_3 = self.out_impact_3(mask_impact_3)
         return {
             'privilege_required': privilege_required, 'attack_vector': attack_vector,
             'impact_1': impact_1, 'impact_2': impact_2, 'impact_3': impact_3
