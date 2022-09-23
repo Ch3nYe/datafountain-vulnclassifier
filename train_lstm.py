@@ -117,7 +117,7 @@ def generate_submission(
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("cpu")
     EPOCHS = 15
     tokenizer_name = "distilbert-base-uncased"
     train_data_path = "./dataset/labeled/train.json"

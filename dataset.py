@@ -69,5 +69,11 @@ class VulnSubmitDataset(Dataset):
 
 
 if __name__ == '__main__':
-    # dataset = VulnDataset("./dataset/labeled/local.test.json")
-    submit_dataset = VulnSubmitDataset("./dataset/test_a.json")
+    from torch.utils.data import DataLoader
+    dataset = VulnDataset("./dataset/labeled/local.test.json")
+    # submit_dataset = VulnSubmitDataset("./dataset/test_a.json")
+    data_loader = DataLoader(dataset, batch_size=16, num_workers=0)
+    it = enumerate(data_loader)
+    data = next(it)[1]
+    import torch
+    # torch.nn.utils.rnn.pack_padded_sequence(data['desc'], torch.count_nonzero(data['attention_mask'],dim=-1), batch_first=True)
