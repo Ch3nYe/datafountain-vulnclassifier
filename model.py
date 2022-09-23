@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 from transformers import BertModel, BertConfig
 
 class VulnClassifier(nn.Module):
@@ -107,14 +108,19 @@ class VulnClassifierLSTM(nn.Module):
         output = torch.cat((h_n[-1, :, :], h_n[-2, :, :]), dim=-1)
 
         mask_privilege_required = self.mask_privilege_required(output)
+        mask_privilege_required = F.relu(mask_privilege_required)
         privilege_required = self.out_privilege_required(mask_privilege_required)
         mask_attack_vector = self.mask_attack_vector(output)
+        mask_attack_vector = F.relu(mask_attack_vector)
         attack_vector = self.out_attack_vector(mask_attack_vector)
         mask_impact_1 = self.mask_impact_1(output)
+        mask_impact_1 = F.relu(mask_impact_1)
         impact_1 = self.out_impact_1(mask_impact_1)
         mask_impact_2 = self.mask_impact_2(output)
+        mask_impact_2 = F.relu(mask_impact_2)
         impact_2 = self.out_impact_2(mask_impact_2)
         mask_impact_3 = self.mask_impact_3(output)
+        mask_impact_3 = F.relu(mask_impact_3)
         impact_3 = self.out_impact_3(mask_impact_3)
         return {
             'privilege_required': privilege_required, 'attack_vector': attack_vector,
@@ -141,6 +147,7 @@ class VulnClassifierLSTMBig(nn.Module):
     def forward(self, x):
         _output, (h_n, c_n) = self.rnn(x)
         output = torch.cat((h_n[-1, :, :], h_n[-2, :, :]), dim=-1)
+        output = F.relu(output)
 
         mask_privilege_required = self.mask_privilege_required(output)
         privilege_required = self.out_privilege_required(mask_privilege_required)

@@ -3,6 +3,7 @@ import csv
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
+from torch.nn.utils.rnn import pack_padded_sequence
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers.optimization import Adafactor, AdafactorSchedule
@@ -29,9 +30,11 @@ def train_epoch(
         optimizer.zero_grad()
 
         input_ids = sample["desc"].to(device)
-        input_ids = input_ids.unsqueeze(2).float()
-        # attention_mask = sample["attention_mask"].to(device)
-        outputs = model(input_ids)
+        input_ids = input_ids.unsqueeze(-1).float()
+        input = pack_padded_sequence(input_ids,
+                                    torch.count_nonzero(sample["attention_mask"], dim=-1).tolist(),
+                                    batch_first=True, enforce_sorted=False)
+        outputs = model(input)
         loss_1 = criterion(outputs['privilege_required'], sample['privilege_required'].to(device))
         loss_2 = criterion(outputs['attack_vector'], sample['attack_vector'].to(device))
         loss_3 = criterion(outputs['impact_1'], sample['impact_1'].to(device))
@@ -60,8 +63,11 @@ def test_epoch(
         batch.pop('cve-number')
         batch = {k: v.to(device) for k, v in batch.items()}
         with torch.no_grad():
-            input_ids = batch['desc'].unsqueeze(2).float()
-            outputs = model(input_ids)
+            input_ids = batch['desc'].unsqueeze(-1).float()
+            input = pack_padded_sequence(input_ids,
+                                         torch.count_nonzero(batch["attention_mask"], dim=-1).tolist(),
+                                         batch_first=True, enforce_sorted=False)
+            outputs = model(input)
 
         batch.pop('desc')
         batch.pop('attention_mask')
@@ -92,8 +98,11 @@ def generate_submission(
             desc_text = batch.pop('desc_text')
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.no_grad():
-                input_ids = batch['desc'].unsqueeze(2).float()
-                outputs = model(input_ids)
+                input_ids = batch['desc'].unsqueeze(-1).float()
+                input = pack_padded_sequence(input_ids,
+                                             torch.count_nonzero(batch["attention_mask"], dim=-1).tolist(),
+                                             batch_first=True, enforce_sorted=False)
+                outputs = model(input)
 
             batch.pop('desc')
             batch.pop('attention_mask')
@@ -117,7 +126,7 @@ def generate_submission(
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda:0')
+    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("cpu")
     EPOCHS = 15
     tokenizer_name = "distilbert-base-uncased"
     train_data_path = "./dataset/labeled/train.json"
@@ -140,7 +149,7 @@ if __name__ == '__main__':
     if load_model:
         model = torch.load(load_model_path)
     else:
-        model = VulnClassifierLSTMBig()
+        model = VulnClassifierLSTM()
     print(model)
 
     model.to(device)
