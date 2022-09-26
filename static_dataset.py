@@ -372,6 +372,27 @@ mistake_label / all = 3787 / 4384 = 0.8638229927007299
 priv+av错误率
 mistake_label / all = 2904 / 4384 = 0.6624087591240876
 
+# nvd cve database data field value set
+"v3av = set() # {'ADJACENT_NETWORK', 'LOCAL', 'NETWORK', 'PHYSICAL'}\n",
+"v3attackComplexity = set() # {'HIGH', 'LOW'}\n",
+"v3privilegesRequired = set() # {'HIGH', 'LOW', 'NONE'}\n",
+"v3userInteraction = set() # {'NONE', 'REQUIRED'}\n",
+"v3scope = set() # {'CHANGED', 'UNCHANGED'}\n",
+"v3confidentialityImpact = set() # {'HIGH', 'LOW', 'NONE'}\n",
+"v3integrityImpact = set() # {'HIGH', 'LOW', 'NONE'}\n",
+"v3availabilityImpact = set() # {'HIGH', 'LOW', 'NONE'}\n",
+"v3baseSeverity = set() # {'CRITICAL', 'HIGH', 'LOW', 'MEDIUM'}\n",
+
+"v2va = set() # {'NETWORK','LOCAL','ADJACENT_NETWORK'}\n",
+"v2accessComplexity = set() # {'HIGH', 'LOW', 'MEDIUM'}\n",
+"v2authentication = set() # {'MULTIPLE', 'NONE', 'SINGLE'}\n",
+"v2confidentialityImpact = set() # {'COMPLETE', 'NONE', 'PARTIAL'}\n",
+"v2integrityImpact = set() # {'COMPLETE', 'NONE', 'PARTIAL'}\n",
+"v2availabilityImpact = set() # {'COMPLETE', 'NONE', 'PARTIAL'}\n",
+"v2severity = set() # {'HIGH', 'LOW', 'MEDIUM'}\n",
+"v2obtainAllPrivilege = set() # {False, True}\n",
+"v2obtainUserPrivilege = set() # {False, True}\n",
+"v2obtainOtherPrivilege = set() # {False, True}\n",
 
 # reverse_static_dataset from "train.json" and "nvdcve-1.1-train.json"
 {
