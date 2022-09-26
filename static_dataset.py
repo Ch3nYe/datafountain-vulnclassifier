@@ -112,11 +112,11 @@ def check_label(dataset_target, dataset, labels=['privilege-required','attack-ve
         data_t, data = None, None
         for d in dataset_target:
             if d['cve-number']==id:
-                data_t = d
+                data_t = deepcopy(d)
                 break
         for d in dataset:
             if d['cve-number']==id:
-                data = d
+                data = deepcopy(d)
                 break
         if not (data_t and data):
             continue
@@ -139,6 +139,69 @@ def check_label(dataset_target, dataset, labels=['privilege-required','attack-ve
     # log
     print("mistake_label / all = {} / {} = {}".format(cnt_mis, cnt_all, cnt_mis/cnt_all))
     return mis_cve_ids
+
+def check_label_return_correct(dataset_target, dataset, nvd_dataset, labels=['privilege-required','attack-vector','impact']):
+    '''
+    accroding to dataset_target, judges labels in dataset.
+    :return: (correct_dataset, nvd_dataset)
+    '''
+
+    cveid = set()
+    for data in dataset:
+        cveid.add(data['cve-number'])
+
+    cnt_cor = 0
+    cnt_all = 0
+    correct_ids = []
+    for id in tqdm(cveid):
+        data_t, data = None, None
+        for d in dataset_target:
+            if d['cve-number']==id:
+                data_t = deepcopy(d)
+                break
+        for d in dataset:
+            if d['cve-number']==id:
+                data = deepcopy(d)
+                break
+        if not (data_t and data):
+            continue
+        if 'impact' in labels:
+            labels.remove("impact")
+            labels.extend(["impact_1","impact_2","impact_3"])
+        for d in [data,data_t]:
+            impacts = d['impact'].split("_")
+            impacts.extend(['none'] * (3 - len(impacts)))
+            d['impact_1'],d['impact_2'],d['impact_3'] = impacts
+        cnt_all+=1
+        flag = True
+        for label in labels:
+            if data_t[label] != data[label]:
+                flag = False
+                break
+        if flag:
+            cnt_cor += 1
+            correct_ids.append(id)
+    # log
+    print("correct_label / all = {} / {} = {}".format(cnt_cor, cnt_all, cnt_cor/cnt_all))
+
+    correct_dataset = []
+    correct_nvd_dataset = []
+    for id in correct_ids:
+        data, ndata = None, None
+        for d in dataset:
+            if d['cve-number'] == id:
+                data = d
+                break
+        for d in nvd_dataset:
+            if d['cve']['CVE_data_meta']['ID'].lower() == id:
+                ndata = d
+                break
+        if not (data and ndata):
+            continue
+        correct_dataset.append(data)
+        correct_nvd_dataset.append(ndata)
+    return correct_dataset, correct_nvd_dataset
+
 
 def reverse_static_dataset(train_dataset:List[dict], nvd_dataset:List[dict]):
     three_replace = {"HIGH": "COMPLETE", "LOW": "PARTIAL", "NONE": "NONE"}
@@ -176,7 +239,7 @@ def reverse_static_dataset(train_dataset:List[dict], nvd_dataset:List[dict]):
                     integrityImpact = three_replace[integrityImpact]
                     availabilityImpact = three_replace[availabilityImpact]
 
-                newdata = tdata.copy()
+                newdata = deepcopy(tdata)
                 newdata['accessVector'] = accessVector
                 newdata['accessComplexity'] = accessComplexity
                 newdata['confidentialityImpact'] = confidentialityImpact
@@ -303,7 +366,14 @@ if __name__ == '__main__':
     with open(nvd_data, "r", encoding="utf-8") as f:
         nvd_dataset = json.load(f)
 
-    reverse_static_dataset(train_dataset,nvd_dataset)
+    # reverse_static_dataset(train_dataset,nvd_dataset)
+
+    # check label, save correct data with two format: labeled format and nvdcve format
+    correct_dataset, correct_nvd_dataset = check_label_return_correct(train_dataset,our_dataset,nvd_dataset)
+    with open("dataset/correct_dataset-train.json","w",encoding='utf-8') as f:
+        json.dump(correct_dataset,f,indent=4)
+    with open("dataset/correct_nvd_dataset-train.json","w",encoding='utf-8') as f:
+        json.dump(correct_nvd_dataset,f,indent=4)
 
 '''
 ===========compare===========
