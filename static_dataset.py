@@ -374,6 +374,7 @@ if __name__ == '__main__':
         json.dump(correct_dataset,f,indent=4)
     with open("dataset/correct_nvd_dataset-train.json","w",encoding='utf-8') as f:
         json.dump(correct_nvd_dataset,f,indent=4)
+    # save correct data where key=k value=v
     k = "impact"
     v = "xx_xx_xx"
     save_nvd_dataset = []
