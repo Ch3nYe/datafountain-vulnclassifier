@@ -374,7 +374,15 @@ if __name__ == '__main__':
         json.dump(correct_dataset,f,indent=4)
     with open("dataset/correct_nvd_dataset-train.json","w",encoding='utf-8') as f:
         json.dump(correct_nvd_dataset,f,indent=4)
-
+    k = "impact"
+    v = "xx_xx_xx"
+    save_nvd_dataset = []
+    save_path = f"correct_nvd_dataset_{k}_{v}.json"
+    for data in correct_nvd_dataset:
+        if data[k] == v:
+            save_nvd_dataset.append(data)
+    with open(save_path,"w",encoding="utf-8") as f:
+        json.dump(save_nvd_dataset,f,indent=4)
 '''
 ===========compare===========
 tag                                     official               our dataset/labeled/afterLabel3.json
