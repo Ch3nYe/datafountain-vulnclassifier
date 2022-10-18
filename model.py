@@ -50,7 +50,7 @@ class VulnClassifier(nn.Module):
         }
 
 
-class VulnClassifier2(nn.Module):
+class VulnClassifierLight(nn.Module):
     def __init__(self,
                  BERT_name=None,
                  bert_num_hidden_layers=1,
@@ -86,9 +86,9 @@ class VulnClassifier2(nn.Module):
         }
 
 
-class VulnClassifierLSTM(nn.Module):
+class VulnClassifierLSTMLight(nn.Module):
     def __init__(self):
-        super(VulnClassifierLSTM, self).__init__()
+        super(VulnClassifierLSTMLight, self).__init__()
         self.rnn = nn.LSTM(input_size=1, hidden_size=512, num_layers=2, bidirectional=True, batch_first=True)
         output_size = self.rnn.hidden_size * 2 if self.rnn.bidirectional else self.rnn.hidden_size
 
@@ -127,9 +127,9 @@ class VulnClassifierLSTM(nn.Module):
             'impact_1': impact_1, 'impact_2': impact_2, 'impact_3': impact_3
         }
 
-class VulnClassifierLSTMBig(nn.Module):
+class VulnClassifierLSTM(nn.Module):
     def __init__(self):
-        super(VulnClassifierLSTMBig, self).__init__()
+        super(VulnClassifierLSTM, self).__init__()
         self.rnn = nn.LSTM(input_size=1, hidden_size=512, num_layers=2, bidirectional=True, batch_first=True)
         output_size = self.rnn.hidden_size * 2 if self.rnn.bidirectional else self.rnn.hidden_size
         self.mask_privilege_required = nn.Linear(output_size, 128)

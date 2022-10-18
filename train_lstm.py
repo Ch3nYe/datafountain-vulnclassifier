@@ -8,7 +8,7 @@ from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers.optimization import Adafactor, AdafactorSchedule
 from dataset import VulnDataset, VulnSubmitDataset
-from model import VulnClassifierLSTM, VulnClassifierLSTMBig
+from model import VulnClassifierLSTMLight, VulnClassifierLSTM
 from torch.nn import MSELoss
 from datasets import load_metric
 from utils import ID_LABEL_MAPS, normalize_result
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("cpu")
     EPOCHS = 15
     tokenizer_name = "distilbert-base-uncased"
-    train_data_path = "./dataset/labeled/train.json"
+    train_data_path = "./dataset/labeled/local.train.json"
     test_data_path = "./dataset/labeled/local.test.json"
     submission_data_path = "./dataset/test_a.json"
     load_model_path = "models/lstm-trained"
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     if load_model:
         model = torch.load(load_model_path)
     else:
-        model = VulnClassifierLSTM()
+        model = VulnClassifierLSTMLight()
     print(model)
 
     model.to(device)

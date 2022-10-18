@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AdamW, get_linear_schedule_with_warmup
 from dataset import VulnDataset, VulnSubmitDataset
-from model import VulnClassifier
+from model import VulnClassifier, VulnClassifierLight
 from torch.nn import MSELoss
 from datasets import load_metric
 from utils import ID_LABEL_MAPS, normalize_result
@@ -118,13 +118,13 @@ def generate_submission(
 if __name__ == '__main__':
     device = torch.device('cuda:0')
     EPOCHS = 5
-    BERT_name = "prajjwal1/bert-small"  # "prajjwal1/bert-small", "distilbert-base-uncased", None
+    BERT_name = "prajjwal1/bert-small"  # options: "prajjwal1/bert-small", "distilbert-base-uncased", None
     tokenizer_name = "distilbert-base-uncased"
-    train_data_path = "./dataset/labeled/train.json"
+    train_data_path = "./dataset/labeled/local.train.json"
     test_data_path = "./dataset/labeled/local.test.json"
     submission_data_path = "./dataset/test_a.json"
-    load_model_path = "models/bert-vulnclassifier-trained"
-    save_model_path = "models/bert-vulnclassifier-trained"
+    load_model_path = "models/bert-vulnclassifier"
+    save_model_path = "models/bert-vulnclassifier"
     result_path = "dataset/results.xlsx"
     test_only = False  # True mean only test model, where you must load it from model_path
     load_model = False  # True mean load model from load_model_path

@@ -1,24 +1,23 @@
 import torch
 from torch.utils.data import DataLoader
-from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers.optimization import Adafactor, AdafactorSchedule
 from dataset import VulnDataset, VulnSubmitDataset
-from model import VulnClassifier, VulnClassifier2
+from model import VulnClassifier, VulnClassifierLight
 from torch.nn import MSELoss
 from train_bert import train_epoch, test_epoch, generate_submission
 
 device = torch.device('cuda:0')
 EPOCHS = 20
 EPOCHS2 = 8
-BERT_name = "prajjwal1/bert-small" # "prajjwal1/bert-small", "distilbert-base-uncased", None
+BERT_name = None
 tokenizer_name = "distilbert-base-uncased"
-train_data_path = "./dataset/labeled/afterLabel3.json"
+train_data_path = "./dataset/labeled/afterLabel-cy-1.json"
 train_data_path2 = "./dataset/labeled/local.train.json"
 test_data_path = "./dataset/labeled/local.test.json"
 submission_data_path = "./dataset/test_a.json"
-load_model_path = "models/bert-vulnclassifier2-finetuned3-adaf"
-save_model_path = "models/bert-vulnclassifier2-finetuned3-adaf"
-result_path = "dataset/submission-vcls2-finetuned3.xlsx"
+load_model_path = "models/bert-vulnclassifierlight-finetuned3-adaf"
+save_model_path = "models/bert-vulnclassifierlight-finetuned3-adaf"
+result_path = "dataset/submission-vclsl-finetuned3.xlsx"
 load_model = False # True mean load model from load_model_path
 generation_only = False  # True mean only generate submission, and you must load model from load_model_path
 
@@ -35,21 +34,15 @@ submission_data_loader = DataLoader(submission_dataset, batch_size=16, num_worke
 if load_model:
     model = torch.load(load_model_path)
 else:
-    model = VulnClassifier2(BERT_name=BERT_name)
+    model = VulnClassifierLight(BERT_name=BERT_name)
 print(model)
 
 
 model.to(device)
 total_train_steps = len(train_data_loader) * EPOCHS + len(train_data_loader2) * EPOCHS2
 
-# optimizer = AdamW(model.parameters(), lr=3e-5, correct_bias=False, no_deprecation_warning=True)
 optimizer = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
 
-# scheduler = get_linear_schedule_with_warmup(
-#   optimizer,
-#   num_warmup_steps=0,
-#   num_training_steps=total_train_steps
-# )
 scheduler = AdafactorSchedule(optimizer)
 
 loss_fn = MSELoss().to(device)

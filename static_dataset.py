@@ -97,7 +97,7 @@ def tricky_static_dataset(dataset:List[dict]):
 
 def check_label(dataset_target, dataset, labels=['privilege-required','attack-vector','impact']):
     '''
-    accroding to dataset_target, judges labels in dataset.
+    accroding to dataset_target, judges labels in dataset. data is correct only all labels equal
     :return: mistake label cve ids
     '''
 
